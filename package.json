@@ -1,0 +1,26 @@
+{
+  "name": "localcart_ai",
+  "version": "1.0.0",
+  "description": "Meal planner with AI integration to generate weekly meal plans based on the user's dietary preferences, budget, and local availability.",
+  "main": "index.js",
+  "workspaces": [
+    "shared",
+    "client",
+    "server"
+  ],
+  "scripts": {
+    "dev:client": "npm run dev --workspace=packages/client",
+    "dev:server": "npm run dev --workspace=packages/server",
+    "dev": "concurrently \"npm:dev:client\" \"npm:dev:server\""
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/IGrewal08/LocalCart_AI.git"
+  },
+  "keywords": [],
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/IGrewal08/LocalCart_AI/issues"
+  },
+  "homepage": "https://github.com/IGrewal08/LocalCart_AI#readme"
+}
