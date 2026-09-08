@@ -22,5 +22,8 @@
   "bugs": {
     "url": "https://github.com/IGrewal08/LocalCart_AI/issues"
   },
-  "homepage": "https://github.com/IGrewal08/LocalCart_AI#readme"
+  "homepage": "https://github.com/IGrewal08/LocalCart_AI#readme",
+  "overrides": {
+    "deepmerge-ts": "^8.0.0"
+  }
 }

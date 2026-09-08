@@ -1,0 +1,153 @@
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+enum MealTime {
+  BREAKFAST
+  LUNCH
+  DINNER
+  SNACKS
+}
+
+model User {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  email     String   @unique
+  name      String   @default("user")
+  password  String
+
+  products   UserProduct[]
+  meals      Meal[]
+  logs       Log[]
+  preference Preference?
+}
+
+// Generic
+model Product {
+  id           String   @id @default(cuid())
+  code         String   @unique
+  createdAt    DateTime @default(now())
+  productName  String   @db.VarChar(255)
+  calories     Int
+  totalCarbs   Float
+  fiber        Float
+  addedSugar   Float
+  totalFat     Float
+  saturatedFat Float
+  transFat     Float
+  protein      Float
+  vitaminA     Float
+  vitaminC     Float
+  vitaminD     Float
+  iron         Float
+  potassium    Float
+  sodium       Float
+  cholesterol  Float
+  keywords     String[]
+  brands       String[]
+  additives    String[]
+  categories   String[]
+  ingredients  String[]
+
+  userProducts UserProduct[]
+  mealProducts MealProduct[]
+  logProducts  LogProduct[]
+
+  @@index([code, productName])
+}
+
+// Junction
+model UserProduct {
+  id        String  @id @default(cuid())
+  calories  Int?
+  price     Float?
+  notes     String?
+
+  userId    String
+  user      User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, productId])
+  @@index([userId])
+}
+
+model Meal {
+  id         String   @id @default(cuid())
+  created_at DateTime @default(now())
+  updated_at DateTime @updatedAt
+  notes      String?  @db.Text
+
+  userId     String
+  user       User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  products   MealProduct[]
+  logs       LogMeal[]
+
+  @@index([userId])
+}
+
+// Junction
+model MealProduct {
+  id        String  @id @default(cuid())
+  quantity  Float   @default(1)
+  unit      String?
+
+  mealId    String
+  meal      Meal    @relation(fields: [mealId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([mealId])
+}
+
+model Log {
+  id        String   @id @default(cuid())
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  date      DateTime @db.Date
+  time      MealTime @default(BREAKFAST)
+
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  products  LogProduct[]
+  meals     LogMeal[]
+
+  @@index([userId, createdAt])
+}
+
+// Junction
+model LogProduct {
+  id        String  @id @default(cuid())
+  quantity  Float   @default(1)
+  unit      String?
+
+  logId     String
+  log       Log     @relation(fields: [logId], references: [id], onDelete: Cascade)
+  productId String
+  product   Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@index([logId])
+}
+
+// Junction
+model LogMeal {
+  logId  String
+  log    Log  @relation(fields: [logId], references: [id], onDelete: Cascade)
+  mealId String
+  meal   Meal @relation(fields: [mealId], references: [id], onDelete: Cascade)
+
+  @@id([logId, mealId])
+}
+
+model Preference {
+  id          String @id @default(cuid())
+  preferences String[]
+
+  userId      String @unique
+  user        User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
