@@ -21,10 +21,22 @@ model User {
   name      String   @default("user")
   password  String
 
+  providers Provider[]
   products   UserProduct[]
   meals      Meal[]
   logs       Log[]
   preference Preference?
+}
+
+model Provider {
+  id             String   @id @default(cuid())
+  name           String
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime
+  providerUserId String   @unique
+
+  userId         String
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
 // Generic
@@ -79,6 +91,7 @@ model UserProduct {
 
 model Meal {
   id         String   @id @default(cuid())
+  name       String
   created_at DateTime @default(now())
   updated_at DateTime @updatedAt
   notes      String?  @db.Text
