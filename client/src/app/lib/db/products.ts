@@ -4,7 +4,10 @@ import { SortOrder } from '../../../generated/prisma/internal/prismaNamespace';
 import type { ProductOrderByWithRelationInput } from '../../../generated/prisma/models/Product';
 
 type ProductWriteData = {
+  code: string;
   productName: string;
+  price?: number;
+  notes?: string;
   calories: number;
   totalCarbs: number;
   fiber: number;
@@ -33,14 +36,16 @@ export const product = {
     productId: string,
   ): Promise<Product | undefined> => {
     try {
-      const res = await prisma.product.findUnique({
+      const res = await prisma.product.findFirst({
         where: {
           userId,
           id: productId,
         },
       });
+
       if (!res)
         throw new Error(`Product ${productId} not found for user ${userId}`);
+
       return res;
     } catch (error) {
       console.error(`Error fetching product ${productId}`, error);
@@ -72,45 +77,22 @@ export const product = {
           userId,
           ...(search && {
             OR: [
-              {
-                productName: {
-                  contains: search,
-                  mode: 'insensitive',
-                },
-              },
-              {
-                keywords: {
-                  has: search,
-                  mode: 'insensitive',
-                },
-              },
-              {
-                brands: {
-                  has: search,
-                  mode: 'insensitive',
-                },
-              },
-              {
-                categories: {
-                  has: search,
-                  mode: 'insensitive',
-                },
-              },
-              {
-                ingredients: {
-                  has: search,
-                  mode: 'insensitive',
-                },
-              },
+              { productName: { contains: search, mode: 'insensitive' } },
+              { keywords: { has: search } },
+              { brands: { has: search } },
+              { categories: { has: search } },
+              { ingredients: { has: search } },
             ],
           }),
         },
         orderBy,
       });
+
       if (!res)
         throw new Error(
           `Products on search ${search}, sort ${sort} not found for user ${userId}`,
         );
+
       return res;
     } catch (error) {
       console.error(
@@ -122,24 +104,25 @@ export const product = {
   },
   createProduct: async (
     userId: string,
-    data: Partial<ProductWriteData>,
+    data: ProductWriteData,
   ): Promise<Product> => {
     try {
       const res = await prisma.product.create({
         data: {
           userId,
-          ...data,
-          keywords: data?.keywords?.length ? data.keywords : null,
-          brands: data?.brands?.length ? data.brands : null,
-          additives: data?.additives?.length ? data.additives : null,
-          categories: data?.categories?.length ? data.categories : null,
-          ingredients: data?.ingredients?.length ? data.ingredients : null,
+          keywords: data?.keywords?.length ? data.keywords : [],
+          brands: data?.brands?.length ? data.brands : [],
+          additives: data?.additives?.length ? data.additives : [],
+          categories: data?.categories?.length ? data.categories : [],
+          ingredients: data?.ingredients?.length ? data.ingredients : [],
         },
       });
+
       if (!res)
         throw new Error(
           `Product ${data.productName} not created for user ${userId}`,
         );
+
       return res;
     } catch (error) {
       console.error(`Error creating product ${data.productName}`, error);
@@ -149,22 +132,36 @@ export const product = {
   updateProduct: async (
     userId: string,
     productId: string,
-    data: Partial<ProductWriteData>,
+    data: ProductWriteData,
   ): Promise<Product> => {
     try {
-      const res = await prisma.product.update({
-        where: { userId: userId, id: productId },
-        data: {
-          ...data,
-          keywords: data?.keywords?.length ? data.keywords : null,
-          brands: data?.brands?.length ? data.brands : null,
-          additives: data?.additives?.length ? data.additives : null,
-          categories: data?.categories?.length ? data.categories : null,
-          ingredients: data?.ingredients?.length ? data.ingredients : null,
+      const existingProduct = await prisma.product.findFirst({
+        where: {
+          id: productId,
+          userId,
         },
       });
+
+      if (!existingProduct)
+        throw new Error(
+          `Product ${productId} not found or unauthorized for user ${userId}`,
+        );
+
+      const res = await prisma.product.update({
+        where: { id: productId },
+        data: {
+          ...data,
+          keywords: data.keywords ?? undefined,
+          brands: data.brands ?? undefined,
+          additives: data.additives ?? undefined,
+          categories: data.categories ?? undefined,
+          ingredients: data.ingredients ?? undefined,
+        },
+      });
+
       if (!res)
         throw Error(`Product ${productId} not found for user ${userId}`);
+
       return res;
     } catch (error) {
       console.error(`Error updating product ${productId}`, error);
@@ -176,14 +173,27 @@ export const product = {
     productId: string,
   ): Promise<Product> => {
     try {
+      const existingProduct = await prisma.findFirst({
+        where: {
+          id: productId,
+          userId,
+        },
+      });
+
+      if (!existingProduct)
+        throw new Error(
+          `Product ${productId} not found or unauthorized for user ${userId}`,
+        );
+
       const res = await prisma.product.delete({
         where: {
-          userId,
           id: productId,
         },
       });
+
       if (!res)
         throw Error(`Product ${productId} not found for user ${userId}`);
+
       return res;
     } catch (error) {
       console.error(`Error deleting product ${productId}`, error);

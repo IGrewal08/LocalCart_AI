@@ -29,3 +29,15 @@ export const mealWithProducts = {
 } satisfies Prisma.MealDefaultArgs;
 
 export type MealWithProducts = Prisma.MealGetPayload<typeof mealWithProducts>;
+
+export type MealProductWrite = {
+  productId: string;
+  quantity?: number;
+  unit?: string | null;
+};
+
+export type MealWriteData = {
+  name?: string;
+  notes?: string | null;
+  products?: MealProductWrite[];
+};
