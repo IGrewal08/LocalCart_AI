@@ -1,9 +1,8 @@
-import { mealWithProducts, MealWithProducts } from '@/types';
+import { mealWithProducts, MealWithProducts, MealWriteData } from '@/types';
 import { Meal } from '../../../generated/prisma/client';
 import { prisma } from '@/prisma';
 import { MealOrderByWithRelationInput } from '../../../generated/prisma/models';
 import { SortOrder } from '../../../generated/prisma/internal/prismaNamespace';
-import { product } from './products';
 
 export const meals = {
   idMeal: async (userId: string, mealId: string): Promise<MealWithProducts> => {
@@ -81,7 +80,7 @@ export const meals = {
 
   createMeal: async (
     userId: string,
-    data: MealWithProducts,
+    data: MealWriteData,
   ): Promise<MealWithProducts> => {
     try {
       if (data.products?.length) {
@@ -127,7 +126,7 @@ export const meals = {
   updateMeal: async (
     userId: string,
     mealId: string,
-    data: MealWithProducts,
+    data: MealWriteData,
   ): Promise<MealWithProducts> => {
     try {
       const existingMeal = await prisma.meal.findFirst({
@@ -176,7 +175,7 @@ export const meals = {
     }
   },
 
-  deleteMeal: async (userId: string, mealId: string): Promise<Meal> => {
+  deleteMeal: async (userId: string, mealId: string): Promise<void> => {
     try {
       const existingProduct = await prisma.product.findFirst({
         where: { id: mealId, userId },

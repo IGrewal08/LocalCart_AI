@@ -1,3 +1,4 @@
+import { product } from '@/lib/db/products';
 import { Prisma } from '../../generated/prisma/client';
 
 export enum mealTime {
@@ -40,4 +41,19 @@ export type MealWriteData = {
   name?: string;
   notes?: string | null;
   products?: MealProductWrite[];
+};
+
+export const logWithMealAndProduct = {
+  include: {
+    products: {
+      include: {
+        product: true,
+      },
+    },
+    meals: {
+      include: {
+        meal: true,
+      },
+    },
+  },
 };
