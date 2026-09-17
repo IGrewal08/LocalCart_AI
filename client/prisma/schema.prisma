@@ -139,12 +139,15 @@ model LogProduct {
 
 // Junction
 model LogMeal {
-  logId  String
-  log    Log  @relation(fields: [logId], references: [id], onDelete: Cascade)
-  mealId String
-  meal   Meal @relation(fields: [mealId], references: [id], onDelete: Cascade)
+  id       String @default(cuid())
+  quantity Float  @default(1)
 
-  @@id([logId, mealId])
+  logId    String
+  log      Log    @relation(fields: [logId], references: [id], onDelete: Cascade)
+  mealId   String
+  meal     Meal   @relation(fields: [mealId], references: [id], onDelete: Cascade)
+
+  @@id([id, logId, mealId])
 }
 
 model Preference {

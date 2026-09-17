@@ -1,5 +1,4 @@
-import { product } from '@/lib/db/products';
-import { Prisma } from '../../generated/prisma/client';
+import { MealTime, Prisma } from '../../generated/prisma/client';
 
 export enum mealTime {
   breakfast = 'BREAKFAST',
@@ -56,4 +55,25 @@ export const logWithMealAndProduct = {
       },
     },
   },
+};
+
+export type LogWithMealAndProduct = Prisma.LogGetPayload<
+  typeof logWithMealAndProduct
+>;
+
+export type LogProductWrite = {
+  productId: string;
+  quantity: number;
+  unit?: string | 'g';
+};
+
+export type LogMealWrite = {
+  quantity: number;
+  mealId: string;
+};
+
+export type LogWriteData = {
+  time: MealTime;
+  products: LogProductWrite[];
+  meals: LogMealWrite[];
 };

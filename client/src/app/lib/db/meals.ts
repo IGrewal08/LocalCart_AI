@@ -1,5 +1,4 @@
 import { mealWithProducts, MealWithProducts, MealWriteData } from '@/types';
-import { Meal } from '../../../generated/prisma/client';
 import { prisma } from '@/prisma';
 import { MealOrderByWithRelationInput } from '../../../generated/prisma/models';
 import { SortOrder } from '../../../generated/prisma/internal/prismaNamespace';
@@ -153,8 +152,7 @@ export const meals = {
           notes: data.notes,
           ...(data.products && {
             products: {
-              deleteMany: {},
-              create: data.products.map((product) => ({
+              set: data.products!.map((product) => ({
                 productId: product.productId,
                 quantity: product.quantity ?? 1,
                 unit: product.unit,

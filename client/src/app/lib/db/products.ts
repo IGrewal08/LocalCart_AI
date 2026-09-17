@@ -30,7 +30,7 @@ type ProductWriteData = {
   ingredients?: string[];
 };
 
-export const product = {
+export const products = {
   idProduct: async (
     userId: string,
     productId: string,
