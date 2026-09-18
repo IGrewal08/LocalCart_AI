@@ -1,3 +1,4 @@
+import { preferences } from '@/lib/db/preferences';
 import { MealTime, Prisma } from '../../generated/prisma/client';
 
 export enum mealTime {
@@ -6,6 +7,36 @@ export enum mealTime {
   dinner = 'DINNER',
   snacks = 'SNACKS',
 }
+
+export type UserWriteData = {
+  email: string;
+  name: string;
+  password: string;
+};
+
+export const userResponse = {
+  select: {
+    id: true,
+    createdAt: true,
+    name: true,
+    email: true,
+    password: false,
+    providers: false,
+    meals: false,
+    logs: false,
+    preference: false,
+  },
+} satisfies Prisma.UserDefaultArgs;
+
+export type UserResponse = Prisma.UserGetPayload<typeof userResponse>;
+
+export type UserUpdateInput = {
+  userId: string;
+  name?: string;
+  email?: string;
+  password?: string;
+  newPassword?: string;
+};
 
 export const mealWithProducts = {
   include: {
