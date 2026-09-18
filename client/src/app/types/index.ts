@@ -7,17 +7,6 @@ export enum mealTime {
   snacks = 'SNACKS',
 }
 
-export type User = {
-  id: string;
-  email: string;
-  name: string;
-};
-
-export type Provider = {
-  id: string;
-  providerName: string;
-};
-
 export const mealWithProducts = {
   include: {
     products: {
@@ -55,7 +44,7 @@ export const logWithMealAndProduct = {
       },
     },
   },
-};
+} satisfies Prisma.LogDefaultArgs;
 
 export type LogWithMealAndProduct = Prisma.LogGetPayload<
   typeof logWithMealAndProduct
@@ -76,4 +65,8 @@ export type LogWriteData = {
   time: MealTime;
   products: LogProductWrite[];
   meals: LogMealWrite[];
+};
+
+export type PreferenceWriteData = {
+  preferences: String[];
 };

@@ -7,7 +7,6 @@ import { prisma } from '@/prisma';
 import { meals } from './meals';
 import { products } from './products';
 import { Meal, MealTime, Product } from '../../../generated/prisma/client';
-import { log } from 'console';
 
 export const logs = {
   idLog: async (
@@ -35,13 +34,13 @@ export const logs = {
     date: Date,
   ): Promise<LogWithMealAndProduct[]> => {
     try {
-      const existingLogs = await prisma.log.findFirst({
+      const existingLog = await prisma.log.findFirst({
         where: {
           userId,
           date,
         },
       });
-      if (!existingLogs)
+      if (!existingLog)
         throw new Error(`Log on date ${date} not found for user ${userId}`);
 
       const res = await prisma.log.findMany({
