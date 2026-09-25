@@ -2,33 +2,7 @@ import { prisma } from '@/prisma';
 import { Product } from '../../../generated/prisma/client';
 import { SortOrder } from '../../../generated/prisma/internal/prismaNamespace';
 import type { ProductOrderByWithRelationInput } from '../../../generated/prisma/models/Product';
-
-type ProductWriteData = {
-  code: string;
-  productName: string;
-  price?: number;
-  notes?: string;
-  calories: number;
-  totalCarbs: number;
-  fiber: number;
-  addedSugar: number;
-  totalFat: number;
-  saturatedFat: number;
-  transFat: number;
-  protein: number;
-  vitaminA: number;
-  vitaminC: number;
-  vitaminD: number;
-  iron: number;
-  potassium: number;
-  sodium: number;
-  cholesterol: number;
-  keywords?: string[];
-  brands?: string[];
-  additives?: string[];
-  categories?: string[];
-  ingredients?: string[];
-};
+import { ProductWriteData } from '@/types';
 
 export const products = {
   idProduct: async (

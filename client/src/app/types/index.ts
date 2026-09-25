@@ -81,6 +81,33 @@ export type LogWithMealAndProduct = Prisma.LogGetPayload<
   typeof logWithMealAndProduct
 >;
 
+export type ProductWriteData = {
+  code: string;
+  productName: string;
+  price?: number;
+  notes?: string;
+  calories: number;
+  totalCarbs: number;
+  fiber: number;
+  addedSugar: number;
+  totalFat: number;
+  saturatedFat: number;
+  transFat: number;
+  protein: number;
+  vitaminA: number;
+  vitaminC: number;
+  vitaminD: number;
+  iron: number;
+  potassium: number;
+  sodium: number;
+  cholesterol: number;
+  keywords?: string[];
+  brands?: string[];
+  additives?: string[];
+  categories?: string[];
+  ingredients?: string[];
+};
+
 export type LogProductWrite = {
   productId: string;
   quantity: number;
