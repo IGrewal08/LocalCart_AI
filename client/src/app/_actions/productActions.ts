@@ -3,112 +3,16 @@ import { z } from 'zod';
 import { SortOrder } from '../../generated/prisma/internal/prismaNamespace';
 import type { ProductOrderByWithRelationInput } from '../../generated/prisma/internal/prismaNamespace';
 import { Product } from '../../generated/prisma/client';
-import { ProductWriteData } from '@/types';
+import { assertProductExists, assertUserExists } from '@/lib/db/guards';
+import { validateAndExecute } from '@/lib/createAction';
 ('use server');
 
-export async function idProductAction(
-  userId: string,
-  productId: string,
-): Promise<{ success: boolean; errors?: any; data?: Product | undefined }> {
-  try {
-    const res = await prisma.product.findFirst({
-      where: {
-        userId,
-        id: productId,
-      },
-    });
-
-    if (!res)
-      throw new Error(`Product ${productId} not found for user ${userId}`);
-
-    return { success: true, data: res };
-  } catch (error) {
-    console.error(`Error fetching product ${productId}`, error);
-    return {
-      success: false,
-      errors: {
-        message: `Failed to retrieved product with ID ${productId}. ${error}`,
-      },
-    };
-  }
-}
-
-const searchProductData = z.object({
+const searchProductSchema = z.object({
   search: z.string().optional(),
   sort: z.string().optional(),
 });
 
-export async function searchProductAction(
-  userId: string,
-  formData: FormData,
-): Promise<{ success: boolean; errors?: any; data?: Product[] }> {
-  const rawData = {
-    search: formData.get('search'),
-    sort: formData.get('sort'),
-  };
-
-  const validateData = searchProductData.safeParse(rawData);
-  if (!validateData.success) {
-    return {
-      success: false,
-      errors: z.treeifyError(validateData.error),
-    };
-  }
-  const data = validateData.data;
-
-  try {
-    const ORDER_MAP: Record<string, ProductOrderByWithRelationInput> = {
-      newest: { createdAt: SortOrder.desc },
-      oldest: { createdAt: SortOrder.asc },
-      a_z: { productName: SortOrder.asc },
-      z_a: { productName: SortOrder.desc },
-    };
-
-    const primarySort =
-      ORDER_MAP[data.sort ?? 'newest'] ?? ORDER_MAP['newest']!;
-
-    const orderBy: ProductOrderByWithRelationInput[] = [
-      primarySort,
-      { id: 'desc' },
-    ];
-
-    const res = await prisma.product.findMany({
-      where: {
-        userId,
-        ...(data.search && {
-          OR: [
-            { productName: { contains: data.search, mode: 'insensitive' } },
-            { keywords: { has: data.search } },
-            { brands: { has: data.search } },
-            { categories: { has: data.search } },
-            { ingredients: { has: data.search } },
-          ],
-        }),
-      },
-      orderBy,
-    });
-
-    if (!res)
-      throw new Error(
-        `Products on search ${data.search}, sort ${data.sort} not found for user ${userId}`,
-      );
-
-    return { success: true, data: res };
-  } catch (error) {
-    console.error(
-      `Error fetching product on search ${data.search}, ${data.sort}`,
-      error,
-    );
-    return {
-      success: false,
-      errors: {
-        message: `Failed to retrieve product with search ${data.search}`,
-      },
-    };
-  }
-}
-
-const createProductData = z.object({
+export const createProductSchema = z.object({
   code: z.string(),
   productName: z
     .string()
@@ -147,6 +51,66 @@ const createProductData = z.object({
     .optional(),
 });
 
+export async function idProductAction(
+  userId: string,
+  productId: string,
+): Promise<{ success: boolean; errors?: any; data?: Product }> {
+  try {
+    const product: Product = await assertProductExists(userId, productId);
+
+    return { success: true, data: product };
+  } catch (error: any) {
+    return {
+      success: false,
+      errors: { message: error.message },
+    };
+  }
+}
+
+export async function searchProductAction(
+  userId: string,
+  formData: FormData,
+): Promise<{ success: boolean; errors?: any; data?: Product[] }> {
+  const rawData = {
+    search: formData.get('search'),
+    sort: formData.get('sort'),
+  };
+
+  return validateAndExecute(searchProductSchema, rawData, async (data) => {
+    await assertUserExists(userId);
+    const ORDER_MAP: Record<string, ProductOrderByWithRelationInput> = {
+      newest: { createdAt: SortOrder.desc },
+      oldest: { createdAt: SortOrder.asc },
+      a_z: { productName: SortOrder.asc },
+      z_a: { productName: SortOrder.desc },
+    };
+
+    const primarySort =
+      ORDER_MAP[data.sort ?? 'newest'] ?? ORDER_MAP['newest']!;
+
+    const orderBy: ProductOrderByWithRelationInput[] = [
+      primarySort,
+      { id: 'desc' },
+    ];
+
+    return await prisma.product.findMany({
+      where: {
+        userId,
+        ...(data.search && {
+          OR: [
+            { productName: { contains: data.search, mode: 'insensitive' } },
+            { keywords: { has: data.search } },
+            { brands: { has: data.search } },
+            { categories: { has: data.search } },
+            { ingredients: { has: data.search } },
+          ],
+        }),
+      },
+      orderBy,
+    });
+  });
+}
+
 export async function createProductAction(
   userId: string,
   formData: FormData,
@@ -178,18 +142,10 @@ export async function createProductAction(
     ingredients: formData.getAll('ingredients'),
   };
 
-  const validateData = createProductData.safeParse(rawData);
+  return validateAndExecute(createProductSchema, rawData, async (data) => {
+    await assertUserExists(userId);
 
-  if (!validateData.success) {
-    return {
-      success: false,
-      errors: z.treeifyError(validateData.error),
-    };
-  }
-  const data: ProductWriteData = validateData.data as ProductWriteData;
-
-  try {
-    const res = await prisma.product.create({
+    return await prisma.product.create({
       data: {
         userId,
         keywords: data?.keywords?.length ? data.keywords : [],
@@ -199,22 +155,7 @@ export async function createProductAction(
         ingredients: data?.ingredients?.length ? data.ingredients : [],
       },
     });
-
-    if (!res)
-      throw new Error(
-        `Product ${data.productName} not created for user ${userId}`,
-      );
-
-    return { success: true, data: res };
-  } catch (error) {
-    console.error(`Error creating product ${data.productName}`, error);
-    return {
-      success: false,
-      errors: {
-        message: `An error occurred while creating the product.`,
-      },
-    };
-  }
+  });
 }
 
 export async function updateProductAction(
@@ -248,35 +189,10 @@ export async function updateProductAction(
     categories: formData.getAll('categories'),
     ingredients: formData.getAll('ingredients'),
   };
+  return validateAndExecute(createProductSchema, rawData, async (data) => {
+    await assertProductExists(userId, productId);
 
-  const validateData = createProductData.safeParse(rawData);
-
-  if (!validateData.success) {
-    return {
-      success: false,
-      errors: z.treeifyError(validateData.error),
-    };
-  }
-
-  const data: ProductWriteData = validateData.data as ProductWriteData;
-
-  try {
-    const existingProduct = await prisma.product.findFirst({
-      where: {
-        id: productId,
-        userId,
-      },
-    });
-
-    if (!existingProduct)
-      return {
-        success: false,
-        errors: {
-          product: `Product ${productId} not found or unauthorized for user ${userId}`,
-        },
-      };
-
-    const res = await prisma.product.update({
+    return await prisma.product.update({
       where: { id: productId },
       data: {
         ...data,
@@ -287,20 +203,7 @@ export async function updateProductAction(
         ingredients: data.ingredients ?? undefined,
       },
     });
-
-    if (!res) throw Error(`Product ${productId} not found for user ${userId}`);
-
-    return { success: true, data: res };
-  } catch (error) {
-    console.error(`Error updating product ${productId}`, error);
-
-    return {
-      success: false,
-      errors: {
-        message: `An error occurred when updating the product ${productId} `,
-      },
-    };
-  }
+  });
 }
 
 export async function deleteProductAction(
@@ -308,38 +211,16 @@ export async function deleteProductAction(
   productId: string,
 ): Promise<{ success: boolean; errors?: any; data?: Product }> {
   try {
-    const existingProduct = await prisma.findFirst({
-      where: {
-        id: productId,
-        userId,
-      },
-    });
-
-    if (!existingProduct) {
-      return {
-        success: false,
-        errors: {
-          product: `Product ${productId} not found or unauthorized for user ${userId}`,
-        },
-      };
-    }
+    await assertProductExists(userId, productId);
 
     const res = await prisma.product.delete({
-      where: {
-        id: productId,
-      },
+      where: { id: productId },
     });
-
-    if (!res) throw Error(`Product ${productId} not found for user ${userId}`);
-
     return { success: true, data: res };
-  } catch (error) {
-    console.error(`Error deleting product ${productId}`, error);
+  } catch (error: any) {
     return {
       success: false,
-      errors: {
-        message: `An error occurred when deleting the product ${productId}`,
-      },
+      errors: { message: error.message },
     };
   }
 }
