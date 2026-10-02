@@ -8,6 +8,7 @@ import {
 import { assertMealExists, assertUserExists } from '@/lib/db/guards';
 import { validateAndExecute } from '@/lib/createAction';
 import { Meal } from '../../generated/prisma/client';
+('use server');
 
 const searchMealSchema = z.object({
   search: z.string().optional(),

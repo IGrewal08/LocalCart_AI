@@ -45,7 +45,32 @@ export async function assertPreferenceExist(
   });
   if (!preference)
     throw new Error(
-      `Preference with ID ${preferenceId} does not exist for user ${userId}.`,
+      `Preference with ID ${preferenceId} does not exist for user with ID ${userId}.`,
     );
   return preference;
+}
+
+export async function assertLogExists(userId: string, date: Date) {
+  const log = await prisma.log.findFirst({
+    where: { userId, date },
+  });
+  if (!log)
+    throw new Error(
+      `Log with date ${date.toString()} does not exits for user with ID ${userId}.`,
+    );
+  return log;
+}
+
+export async function assertLogExistsById(userId: string, logId: string) {
+  const log = await prisma.log.findFirst({
+    where: {
+      id: logId,
+      userId,
+    },
+  });
+  if (!log)
+    throw new Error(
+      `Log with ID ${logId} does not exist for user with ID ${userId}`,
+    );
+  return log;
 }
