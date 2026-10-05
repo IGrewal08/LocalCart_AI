@@ -4,6 +4,7 @@ import { prisma } from '@/lib/prisma';
 import { UserResponse, userResponse } from '@/types';
 import { assertEmailExists, assertUserExists } from '@/lib/guards';
 import { validateAndExecute } from '@/lib/createAction';
+import { authenticatedAction } from '@/lib/authWrapper';
 
 ('use server');
 
@@ -39,20 +40,22 @@ const updateUserSchema = z
 export async function idUserAction(
   userId: string,
 ): Promise<{ success: boolean; errors?: any; data?: UserResponse }> {
-  try {
-    await assertUserExists(userId);
+  return await authenticatedAction(async () => {
+    try {
+      await assertUserExists(userId);
 
-    const res: UserResponse = await prisma.user.findUnique({
-      where: { userId },
-      select: userResponse.select,
-    });
-    return { success: true, data: res };
-  } catch (error: any) {
-    return {
-      success: false,
-      errors: { message: error.message },
-    };
-  }
+      const res: UserResponse = await prisma.user.findUnique({
+        where: { userId },
+        select: userResponse.select,
+      });
+      return { success: true, data: res };
+    } catch (error: any) {
+      return {
+        success: false,
+        errors: { message: error.message },
+      };
+    }
+  });
 }
 
 export async function createUserAction(
@@ -64,19 +67,21 @@ export async function createUserAction(
     password: formData.get('password'),
   };
 
-  return validateAndExecute(createUserSchema, rawData, async (data) => {
-    await assertEmailExists(data.email);
+  return await authenticatedAction(async () => {
+    return await validateAndExecute(createUserSchema, rawData, async (data) => {
+      await assertEmailExists(data.email);
 
-    const hashedPassword = await bcrypt.hash(
-      data.password,
-      await bcrypt.genSalt(10),
-    );
+      const hashedPassword = await bcrypt.hash(
+        data.password,
+        await bcrypt.genSalt(10),
+      );
 
-    data.password = hashedPassword;
+      data.password = hashedPassword;
 
-    return await prisma.user.create({
-      data: data,
-      select: userResponse.select,
+      return await prisma.user.create({
+        data: data,
+        select: userResponse.select,
+      });
     });
   });
 }
@@ -92,29 +97,34 @@ export async function updateUserAction(
     newPassword: formData.get('newPassword'),
   };
 
-  return validateAndExecute(updateUserSchema, rawData, async (data) => {
-    const existingUser = await assertUserExists(userId);
-    await assertEmailExists(data.email);
+  return await authenticatedAction(async () => {
+    return await validateAndExecute(updateUserSchema, rawData, async (data) => {
+      const existingUser = await assertUserExists(userId);
+      await assertEmailExists(data.email);
 
-    if (data.password) {
-      const match = await bcrypt.compare(data.password, existingUser.password);
-      if (!match) {
-        return {
-          success: false,
-          errors: { message: `Invalid email or password for user ${userId}` },
-        };
+      if (data.password) {
+        const match = await bcrypt.compare(
+          data.password,
+          existingUser.password,
+        );
+        if (!match) {
+          return {
+            success: false,
+            errors: { message: `Invalid email or password for user ${userId}` },
+          };
+        }
+
+        data.password = await bcrypt.hash(
+          data.password,
+          await bcrypt.genSalt(10),
+        );
       }
 
-      data.password = await bcrypt.hash(
-        data.password,
-        await bcrypt.genSalt(10),
-      );
-    }
-
-    return await prisma.user.update({
-      where: { userId },
-      data,
-      select: userResponse.select,
+      return await prisma.user.update({
+        where: { userId },
+        data,
+        select: userResponse.select,
+      });
     });
   });
 }
@@ -123,28 +133,30 @@ export async function deleteUserAction(
   userId: string,
   email: string,
 ): Promise<{ success: boolean; errors?: any; data?: void }> {
-  try {
-    await assertUserExists(userId);
-    const verifiedEmail = await assertEmailExists(email);
+  return await authenticatedAction(async () => {
+    try {
+      await assertUserExists(userId);
+      const verifiedEmail = await assertEmailExists(email);
 
-    if (userId != verifiedEmail.userId) {
+      if (userId != verifiedEmail.userId) {
+        return {
+          success: false,
+          errors: {
+            message: `User with email ${email} does not exist for this user ID ${userId}.`,
+          },
+        };
+      }
+
+      await prisma.user.delete({
+        where: { userId, email },
+      });
+
+      return { success: true };
+    } catch (error: any) {
       return {
         success: false,
-        errors: {
-          message: `User with email ${email} does not exist for this user ID ${userId}.`,
-        },
+        errors: { message: error.message },
       };
     }
-
-    await prisma.user.delete({
-      where: { userId, email },
-    });
-
-    return { success: true };
-  } catch (error: any) {
-    return {
-      success: false,
-      errors: { message: error.message },
-    };
-  }
+  });
 }

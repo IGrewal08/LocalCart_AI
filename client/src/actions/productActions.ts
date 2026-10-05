@@ -5,6 +5,7 @@ import type { ProductOrderByWithRelationInput } from '@/generated/prisma/interna
 import { Product } from '@/generated/prisma/client';
 import { assertProductExists, assertUserExists } from '@/lib/guards';
 import { validateAndExecute } from '@/lib/createAction';
+import { authenticatedAction } from '@/lib/authWrapper';
 
 ('use server');
 
@@ -56,16 +57,17 @@ export async function idProductAction(
   userId: string,
   productId: string,
 ): Promise<{ success: boolean; errors?: any; data?: Product }> {
-  try {
-    const product: Product = await assertProductExists(userId, productId);
-
-    return { success: true, data: product };
-  } catch (error: any) {
-    return {
-      success: false,
-      errors: { message: error.message },
-    };
-  }
+  return await authenticatedAction(async () => {
+    try {
+      const product: Product = await assertProductExists(userId, productId);
+      return { success: true, data: product };
+    } catch (error: any) {
+      return {
+        success: false,
+        errors: { message: error.message },
+      };
+    }
+  });
 }
 
 export async function searchProductAction(
@@ -77,38 +79,44 @@ export async function searchProductAction(
     sort: formData.get('sort'),
   };
 
-  return validateAndExecute(searchProductSchema, rawData, async (data) => {
-    await assertUserExists(userId);
-    const ORDER_MAP: Record<string, ProductOrderByWithRelationInput> = {
-      newest: { createdAt: SortOrder.desc },
-      oldest: { createdAt: SortOrder.asc },
-      a_z: { productName: SortOrder.asc },
-      z_a: { productName: SortOrder.desc },
-    };
+  return await authenticatedAction(async () => {
+    return await validateAndExecute(
+      searchProductSchema,
+      rawData,
+      async (data) => {
+        await assertUserExists(userId);
+        const ORDER_MAP: Record<string, ProductOrderByWithRelationInput> = {
+          newest: { createdAt: SortOrder.desc },
+          oldest: { createdAt: SortOrder.asc },
+          a_z: { productName: SortOrder.asc },
+          z_a: { productName: SortOrder.desc },
+        };
 
-    const primarySort =
-      ORDER_MAP[data.sort ?? 'newest'] ?? ORDER_MAP['newest']!;
+        const primarySort =
+          ORDER_MAP[data.sort ?? 'newest'] ?? ORDER_MAP['newest']!;
 
-    const orderBy: ProductOrderByWithRelationInput[] = [
-      primarySort,
-      { id: 'desc' },
-    ];
+        const orderBy: ProductOrderByWithRelationInput[] = [
+          primarySort,
+          { id: 'desc' },
+        ];
 
-    return await prisma.product.findMany({
-      where: {
-        userId,
-        ...(data.search && {
-          OR: [
-            { productName: { contains: data.search, mode: 'insensitive' } },
-            { keywords: { has: data.search } },
-            { brands: { has: data.search } },
-            { categories: { has: data.search } },
-            { ingredients: { has: data.search } },
-          ],
-        }),
+        return await prisma.product.findMany({
+          where: {
+            userId,
+            ...(data.search && {
+              OR: [
+                { productName: { contains: data.search, mode: 'insensitive' } },
+                { keywords: { has: data.search } },
+                { brands: { has: data.search } },
+                { categories: { has: data.search } },
+                { ingredients: { has: data.search } },
+              ],
+            }),
+          },
+          orderBy,
+        });
       },
-      orderBy,
-    });
+    );
   });
 }
 
@@ -143,19 +151,24 @@ export async function createProductAction(
     ingredients: formData.getAll('ingredients'),
   };
 
-  return validateAndExecute(createProductSchema, rawData, async (data) => {
-    await assertUserExists(userId);
-
-    return await prisma.product.create({
-      data: {
-        userId,
-        keywords: data?.keywords?.length ? data.keywords : [],
-        brands: data?.brands?.length ? data.brands : [],
-        additives: data?.additives?.length ? data.additives : [],
-        categories: data?.categories?.length ? data.categories : [],
-        ingredients: data?.ingredients?.length ? data.ingredients : [],
+  return await authenticatedAction(async () => {
+    return await validateAndExecute(
+      createProductSchema,
+      rawData,
+      async (data) => {
+        await assertUserExists(userId);
+        return await prisma.product.create({
+          data: {
+            userId,
+            keywords: data?.keywords?.length ? data.keywords : [],
+            brands: data?.brands?.length ? data.brands : [],
+            additives: data?.additives?.length ? data.additives : [],
+            categories: data?.categories?.length ? data.categories : [],
+            ingredients: data?.ingredients?.length ? data.ingredients : [],
+          },
+        });
       },
-    });
+    );
   });
 }
 
@@ -190,20 +203,25 @@ export async function updateProductAction(
     categories: formData.getAll('categories'),
     ingredients: formData.getAll('ingredients'),
   };
-  return validateAndExecute(createProductSchema, rawData, async (data) => {
-    await assertProductExists(userId, productId);
-
-    return await prisma.product.update({
-      where: { id: productId },
-      data: {
-        ...data,
-        keywords: data.keywords ?? undefined,
-        brands: data.brands ?? undefined,
-        additives: data.additives ?? undefined,
-        categories: data.categories ?? undefined,
-        ingredients: data.ingredients ?? undefined,
+  return await authenticatedAction(async () => {
+    return await validateAndExecute(
+      createProductSchema,
+      rawData,
+      async (data) => {
+        await assertProductExists(userId, productId);
+        return await prisma.product.update({
+          where: { id: productId },
+          data: {
+            ...data,
+            keywords: data.keywords ?? undefined,
+            brands: data.brands ?? undefined,
+            additives: data.additives ?? undefined,
+            categories: data.categories ?? undefined,
+            ingredients: data.ingredients ?? undefined,
+          },
+        });
       },
-    });
+    );
   });
 }
 
@@ -211,17 +229,18 @@ export async function deleteProductAction(
   userId: string,
   productId: string,
 ): Promise<{ success: boolean; errors?: any; data?: Product }> {
-  try {
-    await assertProductExists(userId, productId);
-
-    const res = await prisma.product.delete({
-      where: { id: productId },
-    });
-    return { success: true, data: res };
-  } catch (error: any) {
-    return {
-      success: false,
-      errors: { message: error.message },
-    };
-  }
+  return await authenticatedAction(async () => {
+    try {
+      await assertProductExists(userId, productId);
+      const res = await prisma.product.delete({
+        where: { id: productId },
+      });
+      return { success: true, data: res };
+    } catch (error: any) {
+      return {
+        success: false,
+        errors: { message: error.message },
+      };
+    }
+  });
 }

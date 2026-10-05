@@ -1,4 +1,3 @@
-import { preferences } from '@/lib/db/preferences';
 import { MealTime, Prisma } from '@/generated/prisma/client';
 
 export enum mealTime {
