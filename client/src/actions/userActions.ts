@@ -1,9 +1,10 @@
 import { z } from 'zod';
 import bcrypt from 'bcryptjs';
-import { prisma } from '@/prisma';
-import { UserResponse, userResponse, UserWriteData } from '@/types';
-import { assertEmailExists, assertUserExists } from '@/lib/db/guards';
+import { prisma } from '@/lib/prisma';
+import { UserResponse, userResponse } from '@/types';
+import { assertEmailExists, assertUserExists } from '@/lib/guards';
 import { validateAndExecute } from '@/lib/createAction';
+
 ('use server');
 
 const createUserSchema = z.object({

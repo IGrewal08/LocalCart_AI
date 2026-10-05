@@ -1,4 +1,4 @@
-import { prisma } from '@/prisma';
+import { prisma } from './prisma';
 
 export async function assertUserExists(userId: string) {
   const user = await prisma.user.findUnique({ where: userId });

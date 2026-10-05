@@ -1,8 +1,9 @@
 import z from 'zod';
-import { prisma } from '@/prisma';
-import { Preference } from '../../generated/prisma/client';
-import { assertPreferenceExist, assertUserExists } from '@/lib/db/guards';
+import { prisma } from '@/lib/prisma';
+import { Preference } from '@/generated/prisma/client';
+import { assertPreferenceExist, assertUserExists } from '@/lib/guards';
 import { validateAndExecute } from '@/lib/createAction';
+
 ('user server');
 
 const searchPreferenceSchema = z.object({

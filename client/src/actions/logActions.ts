@@ -5,18 +5,19 @@ import {
   assertMealExists,
   assertProductExists,
   assertUserExists,
-} from '@/lib/db/guards';
+} from '@/lib/guards';
 import { prisma } from '@/lib/prisma';
 import {
   logWithMealAndProduct,
   LogWithMealAndProduct,
   MealWithProducts,
 } from '@/types';
-import z, { success } from 'zod';
-import { Meal, MealTime, Product } from '../../generated/prisma/client';
+import z from 'zod';
+import { MealTime, Product } from '@/generated/prisma/client';
 import { searchMealAction } from './mealActions';
 import { searchProductAction } from './productActions';
-import { Log } from '../../generated/prisma/browser';
+import { Log } from '@/generated/prisma/browser';
+
 ('use server');
 
 const createLogSchema = z.object({

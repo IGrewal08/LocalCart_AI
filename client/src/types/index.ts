@@ -1,5 +1,5 @@
 import { preferences } from '@/lib/db/preferences';
-import { MealTime, Prisma } from '../../generated/prisma/client';
+import { MealTime, Prisma } from '@/generated/prisma/client';
 
 export enum mealTime {
   breakfast = 'BREAKFAST',
@@ -7,6 +7,12 @@ export enum mealTime {
   dinner = 'DINNER',
   snacks = 'SNACKS',
 }
+
+export type User = {
+  id: string;
+  email: string;
+  name: string;
+};
 
 export type UserWriteData = {
   email: string;

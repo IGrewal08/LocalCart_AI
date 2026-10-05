@@ -1,13 +1,14 @@
-import { prisma } from '@/prisma';
+import { prisma } from '@/lib/prisma';
 import { mealWithProducts, MealWithProducts } from '@/types';
 import z from 'zod';
 import {
   MealOrderByWithRelationInput,
   SortOrder,
-} from '../../generated/prisma/internal/prismaNamespace';
-import { assertMealExists, assertUserExists } from '@/lib/db/guards';
+} from '@/generated/prisma/internal/prismaNamespace';
+import { assertMealExists, assertUserExists } from '@/lib/guards';
 import { validateAndExecute } from '@/lib/createAction';
-import { Meal } from '../../generated/prisma/client';
+import { Meal } from '@/generated/prisma/client';
+
 ('use server');
 
 const searchMealSchema = z.object({

@@ -1,10 +1,11 @@
-import { prisma } from '@/prisma';
+import { prisma } from '@/lib/prisma';
 import { z } from 'zod';
-import { SortOrder } from '../../generated/prisma/internal/prismaNamespace';
-import type { ProductOrderByWithRelationInput } from '../../generated/prisma/internal/prismaNamespace';
-import { Product } from '../../generated/prisma/client';
-import { assertProductExists, assertUserExists } from '@/lib/db/guards';
+import { SortOrder } from '@/generated/prisma/internal/prismaNamespace';
+import type { ProductOrderByWithRelationInput } from '@/generated/prisma/internal/prismaNamespace';
+import { Product } from '@/generated/prisma/client';
+import { assertProductExists, assertUserExists } from '@/lib/guards';
 import { validateAndExecute } from '@/lib/createAction';
+
 ('use server');
 
 const searchProductSchema = z.object({
